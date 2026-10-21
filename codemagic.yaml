@@ -10,16 +10,15 @@ workflows:
     scripts:
       - name: Restore App + Set Name + Icon
         script: |
-          echo "=== RESTORE YOUR FLIGHT AGGREGATOR CODE ==="
+          echo "=== PULL CURRENT CODE FROM YOUR BRANCH ==="
           git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
-          git checkout c5f9933 -- lib/ || true
           
           echo "=== KEEP FRESH ANDROID FROM FLUTTER 3.32.8 (AGP 8.7.3) ==="
           rm -rf android
           flutter create --platforms=android --org com.bookmoko.app --project-name book_mo_ko .
           
+          echo "=== RE-APPLY CURRENT CODE OVER FRESH ANDROID ==="
           git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
-          git checkout c5f9933 -- lib/ || true
           
           echo "=== SET APP NAME TO BOOK MO KO ==="
           sed -i '' 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml
