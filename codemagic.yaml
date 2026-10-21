@@ -1,0 +1,45 @@
+workflows:
+  book-mo-ko-apk:
+    name: Book Mo Ko APK
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      flutter: 3.32.8
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Restore App + Set Name + Icon
+        script: |
+          echo "=== RESTORE YOUR FLIGHT AGGREGATOR CODE ==="
+          git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
+          git checkout c5f9933 -- lib/ || true
+          
+          echo "=== KEEP FRESH ANDROID FROM FLUTTER 3.32.8 (AGP 8.7.3) ==="
+          rm -rf android
+          flutter create --platforms=android --org com.bookmoko.app --project-name book_mo_ko .
+          
+          git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
+          git checkout c5f9933 -- lib/ || true
+          
+          echo "=== SET APP NAME TO BOOK MO KO ==="
+          sed -i '' 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml
+          grep label android/app/src/main/AndroidManifest.xml
+          
+          echo "=== GENERATE LAUNCHER ICON ==="
+          cat > flutter_launcher_icons.yaml <<'EOF'
+          flutter_launcher_icons:
+            android: true
+            ios: false
+            image_path: "assets/icon.png"
+            min_sdk_android: 21
+          EOF
+          flutter pub add flutter_launcher_icons --dev 2>/dev/null || true
+          flutter pub get
+          dart run flutter_launcher_icons || true
+      - name: Build Protected APK
+        script: |
+          flutter clean
+          flutter pub get
+          flutter build apk --release --obfuscate --split-debug-info=./symbols --no-tree-shake-icons
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
