@@ -8,7 +8,7 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Restore App + Set Name + Icon
+      - name: Restore App + Set Name + Icon + Net Permission
         script: |
           echo "=== PULL CURRENT CODE FROM YOUR BRANCH ==="
           git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
@@ -22,7 +22,13 @@ workflows:
           
           echo "=== SET APP NAME TO BOOK MO KO ==="
           sed -i '' 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml
-          grep label android/app/src/main/AndroidManifest.xml
+          
+          echo "=== ADD INTERNET PERMISSION FOR DUFFEL API ==="
+          # Isasaksak nito ang Internet Permission sa loob ng AndroidManifest bago ang <application> tag
+          sed -i '' 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
+          
+          echo "=== VERIFY MANIFEST ==="
+          grep -E "label|uses-permission" android/app/src/main/AndroidManifest.xml
           
           echo "=== GENERATE LAUNCHER ICON ==="
           cat > flutter_launcher_icons.yaml <<'EOF'
@@ -30,7 +36,6 @@ workflows:
             android: true
             ios: false
             image_path: "assets/icon.png"
-            min_sdk_android: 21
           EOF
           flutter pub add flutter_launcher_icons --dev 2>/dev/null || true
           flutter pub get
@@ -39,6 +44,7 @@ workflows:
         script: |
           flutter clean
           flutter pub get
-          flutter build apk --release --obfuscate --split-debug-info=./symbols --no-tree-shake-icons
+          # Inalis ang mapanganib na --obfuscate para masiguradong walang error ang Duffel JSON deserialization
+          flutter build apk --release --no-tree-shake-icons
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
