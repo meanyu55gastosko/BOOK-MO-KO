@@ -8,7 +8,7 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Restore App + Set Name + Icon + Net Permission
+           - name: Restore App + Set Name + Icon + Net Permission + URL Launcher Fix
         script: |
           echo "=== PULL CURRENT CODE FROM YOUR BRANCH ==="
           git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
@@ -24,11 +24,23 @@ workflows:
           sed -i '' 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's/android:label="[^"]*"/android:label="BOOK MO KO"/' android/app/src/main/AndroidManifest.xml
           
           echo "=== ADD INTERNET PERMISSION FOR DUFFEL API ==="
-          # Isasaksak nito ang Internet Permission sa loob ng AndroidManifest bago ang <application> tag
           sed -i '' 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
           
+          echo "=== FIX URL LAUNCHER QUERIES FOR ANDROID 11+ ==="
+          # Inilalagay nito ang kinakailangang <queries> tag para gumana ang pag-redirect sa labas ng app
+          cat > queries_patch.xml <<'EOF'
+            <queries>
+                <intent>
+                    <action android:name="android.intent.action.VIEW" />
+                    <data android:scheme="https" />
+                </intent>
+            </queries>
+          EOF
+          sed -i '' '/<manifest/r queries_patch.xml' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i '/<manifest/r queries_patch.xml' android/app/src/main/AndroidManifest.xml
+          rm queries_patch.xml
+          
           echo "=== VERIFY MANIFEST ==="
-          grep -E "label|uses-permission" android/app/src/main/AndroidManifest.xml
+          grep -E "label|uses-permission|scheme" android/app/src/main/AndroidManifest.xml
           
           echo "=== GENERATE LAUNCHER ICON ==="
           cat > flutter_launcher_icons.yaml <<'EOF'
@@ -40,6 +52,7 @@ workflows:
           flutter pub add flutter_launcher_icons --dev 2>/dev/null || true
           flutter pub get
           dart run flutter_launcher_icons || true
+
       - name: Build Protected APK
         script: |
           flutter clean
