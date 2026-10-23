@@ -8,7 +8,7 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-           - name: Restore App + Set Name + Icon + Net Permission + URL Launcher Fix
+      - name: Restore App + Set Name + Icon + Net Permission + URL Launcher Fix
         script: |
           echo "=== PULL CURRENT CODE FROM YOUR BRANCH ==="
           git checkout main -- lib/ assets/ pubspec.yaml 2>/dev/null || git checkout HEAD -- lib/ assets/ || true
@@ -27,14 +27,13 @@ workflows:
           sed -i '' 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' android/app/src/main/AndroidManifest.xml
           
           echo "=== FIX URL LAUNCHER QUERIES FOR ANDROID 11+ ==="
-          # Inilalagay nito ang kinakailangang <queries> tag para gumana ang pag-redirect sa labas ng app
           cat > queries_patch.xml <<'EOF'
-            <queries>
-                <intent>
-                    <action android:name="android.intent.action.VIEW" />
-                    <data android:scheme="https" />
-                </intent>
-            </queries>
+          <queries>
+              <intent>
+                  <action android:name="android.intent.action.VIEW" />
+                  <data android:scheme="https" />
+              </intent>
+          </queries>
           EOF
           sed -i '' '/<manifest/r queries_patch.xml' android/app/src/main/AndroidManifest.xml 2>/dev/null || sed -i '/<manifest/r queries_patch.xml' android/app/src/main/AndroidManifest.xml
           rm queries_patch.xml
@@ -57,7 +56,6 @@ workflows:
         script: |
           flutter clean
           flutter pub get
-          # Inalis ang mapanganib na --obfuscate para masiguradong walang error ang Duffel JSON deserialization
           flutter build apk --release --no-tree-shake-icons
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
